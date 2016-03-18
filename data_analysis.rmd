@@ -1,7 +1,7 @@
 ---
 title: "My_Project"
 author: "James Yonts"
-date: "March 2, 2016"
+date: "March 18, 2016"
 output: html_document
 ---
 
@@ -10,29 +10,59 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## R Markdown
-Did you know that the square roote of 3 is `r sqrt(3)`.
-```{r, echo = FALSE}
-heights <- c(72,71,66,76,70,71)
-ave_height <- mean(heights)
-sd_height <- sd(heights)
+I was interested in GDP per capita over time. I looked at which countries experienced the greatest increase in GDP per capita and which countries experienced the least growth, or even decline in GDP per capita.  For each I looked at both the net change and the percent change. Percent change would likely be considered the better approach to compare changes among different countries. I also was interested in the GDP per capita by continent. I took a simplified approach and used the average of each countries GDP per capita (which is not truly equal to the continental GDP per capita.) Nonetheless, the results allow us to compare the growth over time of each continent generally.
+
+The ten countries with the largest change in GDP are shown in Table 1. 
+
+```{r, echo = FALSE, results="asis"}
+library(knitr)
+#612 Project 1: Find top 10 highest and lowest growth countries between 1952 and 2007 - by both total and percent difference. Plotted change over time by continent
+gapminder <- read.table(file="data/gapminder-FiveYearData.csv", sep = "," , header=T)
+library(plyr)
+library(ggplot2)
+gap1952 <- cbind(gapminder$country[gapminder$year== "1952"], gapminder$gdpPercap[gapminder$year== "1952"])
+gap2007 <- cbind(gapminder$country[gapminder$year== "2007"], gapminder$gdpPercap[gapminder$year== "2007"])
+gapGdpGrowth <- gap2007 - gap1952
+gapGdpGrowth[,1] <- gap2007[,1] #I want to readd in the countries  - there is likely a simpler (one line) way of doing this
+highest10total <- cbind.data.frame(gapminder$country[gapminder$year == "2007"][head(sort.list(gapGdpGrowth[,2], decreasing = TRUE),10)], head(sort(gapGdpGrowth[,2], decreasing = TRUE),10))  #10 max total- goal here is to remove all duplicate country names and then output the name of the ones chosen in brackets
+lowest10total <- cbind.data.frame(gapminder$country[gapminder$year == "2007"][head(sort.list(gapGdpGrowth[,2]),10)], head(sort(gapGdpGrowth[,2]),10)) #10 worst total
+gapGdpGrowthPercent <- gap2007/gap1952*100 
+gapGdpGrowthPercent[,1] <- gap2007[,1]
+highest10percent <- cbind.data.frame(gapminder$country[gapminder$year == "2007"][head(sort.list(gapGdpGrowthPercent[,2], decreasing = TRUE),10)],head(sort(gapGdpGrowthPercent[,2], decreasing = TRUE),10)) #10 highest percent
+lowest10percent <- cbind.data.frame(gapminder$country[gapminder$year == "2007"][head(sort.list(gapGdpGrowthPercent[,2]),10)], head(sort(gapGdpGrowthPercent[,2]),10)) #10 lowest percent
+names(highest10total)[1] <- "Most Growth Countries"
+names(highest10total)[2] <- "GDP Change"
+names(lowest10total)[1] <- "Lowest Growth Countries"
+names(lowest10total)[2] <- "GDP Change"
+names(highest10percent)[1] <- "Most % Growth Countries"
+names(highest10percent)[2] <- "% GDP 2007 to 1952"
+names(lowest10percent)[1] <- "Least % Growth Countries"
+names(lowest10percent)[2] <- "% GDP Change 2007 to 1952"
+combinedGapResultsHigh <- cbind.data.frame(highest10total, highest10percent)
+combinedGapResultsLow <- cbind.data.frame(lowest10total, lowest10percent)
+gapGdpContinent <- ddply(.data = gapminder, .variables = c("continent","year") , .fun = function(x) mean(x$gdpPercap)) #flaw here is that this isnt a real gdp per cap, doesnt take into account differing populations
+my_table_high <- (kable(combinedGapResultsHigh, auto = TRUE, digits = 0, caption = "Table 1"))
+print(my_table_high, type ="html")
+my_table_low <- (kable(combinedGapResultsLow, auto = TRUE, digits = 0, caption = "Table 2"))
+my_plot <- ggplot(data = gapGdpContinent, aes(x = year, y = V1, color = continent)) + geom_point() + scale_y_log10() + labs(y = "Gdp Per Capita") + ggtitle("GDP Per Capita by Continent")
+
+
 ```
 
-In our study we measured the heights of `r length(heights)` individuals. Their average height was `r ave_height` (sd =`r sd_height`). That's so cool.
+To me, the net change in GDP per capita did not have any surprises. The percent change in GDP was quite interesting though. I never heard much about Equatorial Guinea's economic growth, after looking into it it turns out they discovered oil. It also served as a reminder of the economic miracle that occured in Japan after World War 2 - if the data was extended further back in history my guess would be that Japan would be even higher on the list. 
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+The ten countries at the bottom of the change in GDP per capita list are shown in Table 2. 
 
-When you click the **Knit** button a *document* will be generated that includes both content as well as the ***output*** of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r, echo = FALSE, results="asis"}
+print(my_table_low, type ="html")
 ```
 
-## Including Plots
+The story here is Kuwait. I had never come across this before - GDP per capita was $`r format(gapminder[gapminder$country == "Kuwait",][gapminder[gapminder$country == "Kuwait",]$year == "1952",6], scientific = FALSE, digits = 8)` in the 1950's. While being the largest net decrease, Kuwait still has a GDP per capita well above the global average at greater than $40000. I knew growth was slow in some of these nations but I would not have guessed that some nations had experienced decreases in GDP per capita over 55 years. That is so far removed from anything we experience in the United States. 
 
-You can also embed plots, for example:
+Next, I plotted the average GDP per capita for each continent over time - log scale on the Y-axis. 
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r, echo = FALSE, results="asis"}
+print(my_plot)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Europe's continuous growth is fairly remarkable. It would be interesting to break down the Americas into Noth and South America. I would think North America's growth would be more similar to Europe's. Asia and Africa both had a decade (even longer for Africa) where the continent had little to no GDP growth per capita. 

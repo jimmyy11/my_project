@@ -1,6 +1,4 @@
-heights <- c(34, 54, 34, 50, 53, 56,60)
-ave_height <- mean(heights)
-sd_height <- sd(heights)
+
 # IPLOT FOR FUN
 plot_life_expectancy <- function(country_name, color){
   
